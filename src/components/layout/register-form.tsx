@@ -31,11 +31,6 @@ export default function RegisterForm() {
   };
 
   const handleSubmit = async () => {
-    if (form.email !== form.confirmEmail) {
-      setError("Emails do not match");
-      return;
-    }
-
     if (!form.name) {
       return setError("Please Enter Store name!");
     }
@@ -54,23 +49,21 @@ export default function RegisterForm() {
 
     try {
       setError("");
-
       setLoading(true);
 
-      const res = await api.post("/auth/register", {
+      await api.post("/auth/register", {
         name: form.name,
+        storeName: form.storeName,
         email: form.email,
+        phone: form.phone,
         password: form.password,
       });
 
-      console.log("REGISTER SUCCESS:", res.data);
-      navigate("/login");
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError("Sign Up Failed");
-      } else {
-        setError("Sign Up Failed");
-      }
+      // ✅ SAVE EMAIL + OPEN OTP MODAL
+      setUserEmail(form.email);
+      setShowOtpModal(true);
+    } catch (err) {
+      setError("Sign Up Failed");
     } finally {
       setLoading(false);
     }
