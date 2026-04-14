@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import api from "@/lib/axios";
 import { useAuthStore } from "@/lib/store";
 import { Eye, EyeOff } from "lucide-react";
+import TwoFADialog from "@/pages/(auth)/two-fa-dialog/two-fa-dialog";
 
 export default function LoginForm() {
   const navigate = useNavigate();
@@ -18,6 +19,8 @@ export default function LoginForm() {
   });
 
   const [loading, setLoading] = useState(false);
+
+  const [twoFAOpen, setTwoFAOpen] = useState(false);
 
   const handleGoogleLogin = () => {
     window.location.href = "http://localhost:5000:api/auth/google";
@@ -59,6 +62,10 @@ export default function LoginForm() {
       const { user, token } = res.data;
 
       setAuth(user, token);
+      if (res.data.requires2FA) {
+      setTwoFAOpen(true);
+      return;
+      }
 
       navigate("/dashboard");
     } catch {
@@ -72,7 +79,7 @@ export default function LoginForm() {
     <div className="w-full max-w-md space-y-8">
       {/* Header */}
       <div className="text-center">
-        <img src="/icons/logo.png" alt="Logo" className="mx-auto w-24 h-16" />
+        <img src="/icons/logo.svg" alt="Logo" className="mx-auto w-8 h-8" />
 
         <h1 className="text-[32px] leading-tight font-semibold mb-2">
           Welcome Back!
@@ -99,6 +106,7 @@ export default function LoginForm() {
         {/* Password */}
         <div className="relative">
           <Input
+            className="w-112 h-11"
             name="password"
             type={showPassword ? "password" : "text"}
             placeholder="Your Password"
@@ -141,7 +149,11 @@ export default function LoginForm() {
 
         {error && <p className="text-red-500 text-sm">{error}</p>}
 
-        <Button onClick={handleSubmit} disabled={loading} className="w-full">
+        <Button
+          onClick={handleSubmit}
+          disabled={loading}
+          className="w-full h-11"
+        >
           {loading ? "Signing in..." : "Sign in"}
         </Button>
       </div>
@@ -180,6 +192,16 @@ export default function LoginForm() {
           <span className="text-sm font-medium">Apple</span>
         </button>
       </div>
+
+      <TwoFADialog
+        open={twoFAOpen}
+        onClose={() => setTwoFAOpen(false)}
+        email={form.email}
+        onSuccess={(data) => {
+          localStorage.setItem("token", data.token);
+          console.log("2FA SUCCESS");
+        }}
+      />
     </div>
   );
 }
