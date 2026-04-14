@@ -11,8 +11,9 @@ export default function RegisterForm() {
 
   const [form, setForm] = useState({
     name: "",
+    storeName: "",
     email: "",
-    confirmEmail: "",
+    phone: "",
     password: "",
     confirmPassword: "",
   });
@@ -22,6 +23,10 @@ export default function RegisterForm() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [userEmail, setUserEmail] = useState("");
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({
@@ -69,6 +74,24 @@ export default function RegisterForm() {
     }
   };
 
+  const handleVerifyOtp = async () => {
+    try {
+      setLoading(true);
+
+      await api.post("/auth/verify-otp", {
+        email: userEmail,
+        otp: otp,
+      });
+
+      // ✅ success → go to login
+      navigate("/login");
+    } catch (err) {
+      setError("Invalid OTP");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="w-full max-w-md space-y-8">
       {/* Header */}
@@ -89,9 +112,25 @@ export default function RegisterForm() {
       </div>
 
       {/* Form */}
-      <div className="space-y-4">{/* your inputs here */}</div>
 
-      {/* Form */}
+      <div className="flex gap-4">
+        <Input
+          name="name"
+          type="text"
+          className="flex-1 border p-2"
+          placeholder="Full Name"
+          value={form.name}
+          onChange={handleChange}
+        />
+        <Input
+          name="storeName"
+          type="text"
+          value={form.storeName}
+          className="flex-1 border p-2"
+          placeholder="Store Name"
+          onChange={handleChange}
+        />
+      </div>
 
       <div className="flex gap-4">
         <Input
@@ -103,23 +142,16 @@ export default function RegisterForm() {
           onChange={handleChange}
         />
         <Input
-          name="confirmEmail"
-          type="email"
-          value={form.confirmEmail}
+          name="phone"
+          type="text"
+          value={form.phone}
           className="flex-1 border p-2"
-          placeholder="Confirm Email"
+          placeholder="Phone number"
           onChange={handleChange}
         />
       </div>
 
       <div className="space-y-4">
-        <Input
-          name="name"
-          placeholder="Store Name"
-          value={form.name}
-          onChange={handleChange}
-        />
-
         {/* Password */}
         <div className="relative">
           <Input
@@ -198,6 +230,40 @@ export default function RegisterForm() {
           <span className="text-sm font-medium">Apple</span>
         </button>
       </div>
+
+      {showOtpModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+          <div className="bg-white p-6 rounded-2xl w-[90%] max-w-sm space-y-4">
+            <h2 className="text-xl font-semibold text-center">Verify Email</h2>
+
+            <p className="text-sm text-gray-500 text-center">
+              Enter the OTP sent to your email
+            </p>
+
+            <Input
+              type="text"
+              placeholder="Enter OTP"
+              value={otp}
+              onChange={(e) => setOtp(e.target.value)}
+            />
+
+            <Button
+              onClick={handleVerifyOtp}
+              className="w-full"
+              disabled={loading}
+            >
+              {loading ? "Verifying..." : "Verify"}
+            </Button>
+
+            <button
+              onClick={() => setShowOtpModal(false)}
+              className="text-sm text-gray-400 w-full text-center"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
