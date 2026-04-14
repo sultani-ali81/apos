@@ -97,9 +97,9 @@ export default function RegisterForm() {
       {/* Header */}
       <div className="text-center">
         <img
-          src="icons/logo.png"
+          src="icons/logo.svg"
           alt="Logo"
-          className="mx-auto w-24 h-16 mb-0"
+          className="mx-auto w-8 h-8"
         />
 
         <h1 className="text-[32px] leading-tight font-semibold mb-2">
@@ -156,10 +156,13 @@ export default function RegisterForm() {
         <div className="relative">
           <Input
             name="password"
+            
             type={showPassword ? "password" : "text"}
             placeholder="Password"
             value={form.password}
             onChange={handleChange}
+          
+            
           />
 
           <button
@@ -192,10 +195,11 @@ export default function RegisterForm() {
 
         {error && <p className="text-red-500 text-sm">{error}</p>}
 
-        <Button onClick={handleSubmit} disabled={loading} className="w-full">
+        <Button onClick={handleSubmit} disabled={loading} className="w-full h-11">
           {loading ? "Creating..." : "Sign Up"}
         </Button>
       </div>
+
 
       <div className="text-center text-sm text-gray-500">
         Already have an account?{" "}
