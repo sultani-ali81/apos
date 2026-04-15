@@ -73,7 +73,7 @@ export default function TwoFASetupDialog({
 
       // Verify the 2FA setup with the token
       await api.post(
-        "/auth/verify-2fa-setup",
+        "/auth/enable-2fa",
         {
           email,
           code,
