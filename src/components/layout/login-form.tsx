@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import api from "@/lib/axios";
 import { useAuthStore } from "@/lib/store";
 import { Eye, EyeOff } from "lucide-react";
-import TwoFADialog from "@/pages/(auth)/two-fa-dialog/two-fa-dialog";
+import TwoFADialog from "@/pages/(auth)/two-fa-dialog";
+import TwoFASetupDialog from "@/pages/(auth)/two-fa-dialog;
 
 export default function LoginForm() {
   const navigate = useNavigate();
