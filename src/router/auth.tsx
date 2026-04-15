@@ -22,8 +22,8 @@ export const authRoutes: RouteObject[] = [
     path: "/reset-password",
     element: <ResetPassword />,
   },
-  {
-    path: "/verify-2fa",
-    element: <Verify2FA />,
-  },
+  // {
+  //   path: "/verify-2fa",
+  //   element: <Verify2FA />,
+  // },
 ];
