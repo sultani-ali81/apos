@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import api from "@/lib/axios";
-import QRCode from "qrcode.react";
 
 import {
   Dialog,
@@ -20,35 +19,32 @@ type Props = {
 };
 
 export default function TwoFASetupDialog({ open, onClose, email }: Props) {
-  const [step, setStep] = useState<"qr" | "verify">("qr");
   const [qrCode, setQrCode] = useState("");
-  const [secret, setSecret] = useState("");
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showCodeInput, setShowCodeInput] = useState(false);
 
-  const handleOpenChange = async (isOpen: boolean) => {
-    if (isOpen && !qrCode) {
-      await generateQRCode();
-    } else if (!isOpen) {
-      onClose();
+  useEffect(() => {
+    if (open && !qrCode) {
+      generateQRCode();
     }
-  };
+  }, [open, qrCode]);
 
   const generateQRCode = async () => {
     try {
       setError("");
       setLoading(true);
+      setShowCodeInput(false);
+      setCode("");
 
       const res = await api.post("/auth/setup-2fa", {
         email,
       });
 
       setQrCode(res.data.qrCode);
-      setSecret(res.data.secret);
-      setStep("qr");
     } catch (err) {
-      setError("Failed to generate 2FA setup");
+      setError("Failed to generate 2FA QR code");
     } finally {
       setLoading(false);
     }
@@ -61,15 +57,13 @@ export default function TwoFASetupDialog({ open, onClose, email }: Props) {
 
       await api.post("/auth/verify-2fa-setup", {
         email,
-        secret,
         code,
       });
 
-      // Success - close dialog
-      setStep("qr");
-      setCode("");
+      // Success - close dialog and reset
       setQrCode("");
-      setSecret("");
+      setCode("");
+      setShowCodeInput(false);
       onClose();
     } catch (err: unknown) {
       setError("Invalid code. Please try again.");
@@ -78,47 +72,64 @@ export default function TwoFASetupDialog({ open, onClose, email }: Props) {
     }
   };
 
+  const handleClose = () => {
+    setQrCode("");
+    setCode("");
+    setShowCodeInput(false);
+    setError("");
+    onClose();
+  };
+
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="text-center">
             Enable Two-Factor Authentication
           </DialogTitle>
           <DialogDescription className="text-center">
-            {step === "qr"
+            {!showCodeInput
               ? "Scan this QR code with your authenticator app"
               : "Enter the 6-digit code from your authenticator app"}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {step === "qr" && qrCode && (
+          {!showCodeInput ? (
             <>
-              <div className="flex justify-center">
-                <div className="bg-white p-4 rounded-lg border">
-                  <img src={qrCode} alt="2FA QR Code" className="w-40 h-40" />
+              {qrCode && (
+                <>
+                  <div className="flex justify-center">
+                    <div className="bg-white p-4 rounded-lg border">
+                      <img
+                        src={qrCode}
+                        alt="2FA QR Code"
+                        className="w-48 h-48"
+                      />
+                    </div>
+                  </div>
+
+                  <p className="text-sm text-gray-600 text-center">
+                    Scanned the QR code? Tap the button below when ready.
+                  </p>
+
+                  <Button
+                    onClick={() => setShowCodeInput(true)}
+                    className="w-full"
+                    disabled={loading}
+                  >
+                    I've Scanned the QR Code
+                  </Button>
+                </>
+              )}
+
+              {loading && !qrCode && (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Generating QR code...</p>
                 </div>
-              </div>
-
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <p className="text-xs text-gray-600 mb-2">
-                  Secret Key (backup):
-                </p>
-                <code className="text-sm font-mono break-all">{secret}</code>
-              </div>
-
-              <p className="text-sm text-gray-600 text-center">
-                Can't scan? Enter this code manually in your authenticator app.
-              </p>
-
-              <Button onClick={() => setStep("verify")} className="w-full">
-                I've Scanned the QR Code
-              </Button>
+              )}
             </>
-          )}
-
-          {step === "verify" && (
+          ) : (
             <>
               <p className="text-sm text-muted-foreground text-center">
                 Enter the 6-digit code from your authenticator app
@@ -131,6 +142,7 @@ export default function TwoFASetupDialog({ open, onClose, email }: Props) {
                 minLength={6}
                 placeholder="000000"
                 className="text-center text-lg tracking-widest"
+                autoFocus
               />
 
               {error && (
@@ -140,7 +152,11 @@ export default function TwoFASetupDialog({ open, onClose, email }: Props) {
               <div className="flex gap-2">
                 <Button
                   variant="outline"
-                  onClick={() => setStep("qr")}
+                  onClick={() => {
+                    setShowCodeInput(false);
+                    setCode("");
+                    setError("");
+                  }}
                   className="flex-1"
                   disabled={loading}
                 >
