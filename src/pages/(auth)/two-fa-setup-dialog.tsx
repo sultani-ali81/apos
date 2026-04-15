@@ -16,9 +16,17 @@ type Props = {
   open: boolean;
   onClose: () => void;
   email: string;
+  token: string;
+  onSuccess?: () => void;
 };
 
-export default function TwoFASetupDialog({ open, onClose, email }: Props) {
+export default function TwoFASetupDialog({
+  open,
+  onClose,
+  email,
+  token,
+  onSuccess,
+}: Props) {
   const [qrCode, setQrCode] = useState("");
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
@@ -38,13 +46,21 @@ export default function TwoFASetupDialog({ open, onClose, email }: Props) {
       setShowCodeInput(false);
       setCode("");
 
-      const res = await api.post("/auth/setup-2fa", {
-        email,
-      });
+      // Use the token from login to generate QR code
+      const res = await api.post(
+        "/auth/setup-2fa",
+        { email },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
 
       setQrCode(res.data.qrCode);
     } catch (err) {
       setError("Failed to generate 2FA QR code");
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -55,15 +71,25 @@ export default function TwoFASetupDialog({ open, onClose, email }: Props) {
       setError("");
       setLoading(true);
 
-      await api.post("/auth/verify-2fa-setup", {
-        email,
-        code,
-      });
+      // Verify the 2FA setup with the token
+      await api.post(
+        "/auth/verify-2fa-setup",
+        {
+          email,
+          code,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
 
       // Success - close dialog and reset
       setQrCode("");
       setCode("");
       setShowCodeInput(false);
+      onSuccess?.();
       onClose();
     } catch (err: unknown) {
       setError("Invalid code. Please try again.");
