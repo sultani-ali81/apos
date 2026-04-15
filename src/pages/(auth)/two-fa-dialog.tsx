@@ -65,7 +65,8 @@ export default function TwoFADialog({
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
             maxLength={6}
-            placeholder="123456"
+            minLength={6}
+            placeholder="000000"
             className="text-center text-lg tracking-widest"
           />
 
