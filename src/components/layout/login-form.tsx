@@ -6,9 +6,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import api from "@/lib/axios";
 import { useAuthStore } from "@/lib/store";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Shield } from "lucide-react";
 import TwoFADialog from "@/pages/(auth)/two-fa-dialog";
-import TwoFASetupDialog from "@/pages/(auth)/two-fa-dialog;
+import TwoFASetupDialog from "@/pages/(auth)/two-fa-setup-dialog";
 
 export default function LoginForm() {
   const navigate = useNavigate();
@@ -20,16 +20,16 @@ export default function LoginForm() {
   });
 
   const [loading, setLoading] = useState(false);
-
   const [twoFAOpen, setTwoFAOpen] = useState(false);
+  const [twoFASetupOpen, setTwoFASetupOpen] = useState(false);
+  const [pendingAuth, setPendingAuth] = useState<{
+    user: any;
+    token: string;
+  } | null>(null);
 
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:5000:api/auth/google";
+    window.location.href = "http://localhost:5000/api/auth/google";
   };
-
-  // const handleAppleLogin = () => {
-  //   window.location.href = "http://localhost:5000/api/auth/apple";
-  // };
 
   const [showPassword, setShowPassword] = useState(true);
   const [error, setError] = useState("");
@@ -62,17 +62,31 @@ export default function LoginForm() {
 
       const { user, token } = res.data;
 
-      setAuth(user, token);
+      // Check if 2FA is required
       if (res.data.requires2FA) {
-      setTwoFAOpen(true);
-      return;
+        // Store pending auth data and show 2FA dialog
+        setPendingAuth({ user, token });
+        setTwoFAOpen(true);
+        return;
       }
 
+      // No 2FA required, set auth and navigate
+      setAuth(user, token);
       navigate("/dashboard");
     } catch {
       setError("Login failed");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleTwoFASuccess = (data: any) => {
+    if (pendingAuth) {
+      // Set auth with the pending user and token
+      setAuth(pendingAuth.user, data.token || pendingAuth.token);
+      localStorage.setItem("token", data.token || pendingAuth.token);
+      setPendingAuth(null);
+      navigate("/dashboard");
     }
   };
 
@@ -159,8 +173,19 @@ export default function LoginForm() {
         </Button>
       </div>
 
+      {/* Enable 2FA Button */}
+      <div className="pt-2 border-t">
+        <button
+          onClick={() => setTwoFASetupOpen(true)}
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-gray-300 hover:bg-gray-50 transition text-sm font-medium text-gray-700"
+        >
+          <Shield className="h-4 w-4" />
+          Enable Two-Factor Authentication
+        </button>
+      </div>
+
       <div className="text-center text-sm text-gray-500">
-        Don’t have an account?{" "}
+        Don't have an account?{" "}
         <span
           onClick={() => navigate("/register")}
           className="text-black font-medium cursor-pointer hover:underline"
@@ -196,12 +221,18 @@ export default function LoginForm() {
 
       <TwoFADialog
         open={twoFAOpen}
-        onClose={() => setTwoFAOpen(false)}
-        email={form.email}
-        onSuccess={(data) => {
-          localStorage.setItem("token", data.token);
-          console.log("2FA SUCCESS");
+        onClose={() => {
+          setTwoFAOpen(false);
+          setPendingAuth(null);
         }}
+        email={form.email}
+        onSuccess={handleTwoFASuccess}
+      />
+
+      <TwoFASetupDialog
+        open={twoFASetupOpen}
+        onClose={() => setTwoFASetupOpen(false)}
+        email={form.email}
       />
     </div>
   );
