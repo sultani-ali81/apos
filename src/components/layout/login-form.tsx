@@ -6,9 +6,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import api from "@/lib/axios";
 import { useAuthStore } from "@/lib/store";
-import { Eye, EyeOff, Shield } from "lucide-react";
-import TwoFADialog from "@/pages/(auth)/two-fa-dialog";
-import TwoFASetupDialog from "@/pages/(auth)/two-fa-setup-dialog";
+import { Eye, EyeOff } from "lucide-react";
+import TwoFADialog from "@/pages/(auth)/two-fa-dialog/two-fa-dialog";
 
 export default function LoginForm() {
   const navigate = useNavigate();
@@ -21,11 +20,7 @@ export default function LoginForm() {
 
   const [loading, setLoading] = useState(false);
   const [twoFAOpen, setTwoFAOpen] = useState(false);
-  const [twoFASetupOpen, setTwoFASetupOpen] = useState(false);
-  const [pendingAuth, setPendingAuth] = useState<{
-    user: any;
-    token: string;
-  } | null>(null);
+  const [pendingAuth, setPendingAuth] = useState<{ user: any; token: string } | null>(null);
 
   const handleGoogleLogin = () => {
     window.location.href = "http://localhost:5000/api/auth/google";
@@ -62,15 +57,15 @@ export default function LoginForm() {
 
       const { user, token } = res.data;
 
-      // Check if 2FA is required
+      // Check if 2FA is required (enabled for this user)
       if (res.data.requires2FA) {
-        // Store pending auth data and show 2FA dialog
+        // Store pending auth data and show 2FA verification dialog
         setPendingAuth({ user, token });
         setTwoFAOpen(true);
         return;
       }
 
-      // No 2FA required, set auth and navigate
+      // No 2FA required, set auth and navigate to dashboard
       setAuth(user, token);
       navigate("/dashboard");
     } catch {
@@ -173,17 +168,6 @@ export default function LoginForm() {
         </Button>
       </div>
 
-      {/* Enable 2FA Button */}
-      <div className="pt-2 border-t">
-        <button
-          onClick={() => setTwoFASetupOpen(true)}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-gray-300 hover:bg-gray-50 transition text-sm font-medium text-gray-700"
-        >
-          <Shield className="h-4 w-4" />
-          Enable Two-Factor Authentication
-        </button>
-      </div>
-
       <div className="text-center text-sm text-gray-500">
         Don't have an account?{" "}
         <span
@@ -227,12 +211,6 @@ export default function LoginForm() {
         }}
         email={form.email}
         onSuccess={handleTwoFASuccess}
-      />
-
-      <TwoFASetupDialog
-        open={twoFASetupOpen}
-        onClose={() => setTwoFASetupOpen(false)}
-        email={form.email}
       />
     </div>
   );
